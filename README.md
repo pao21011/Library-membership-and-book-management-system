@@ -18,7 +18,7 @@ LibManager is a simple and user-friendly library management system that allows u
 
 2. Open the __index.html__ file in your web browser to access the application.
 
-**Usage**
+## Usage
 1. Login: Use the following credentials to log in:
 - Admin
     Username: admin  
