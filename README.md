@@ -33,8 +33,10 @@ LibManager is a simple and user-friendly library management system that allows u
 - Issue Item: Select an available book or media item to issue.
 - Return Item: Select an issued item to return and check for fines.
 - Add New Item: Admins can add new books, movies, or journals to the inventory.
+- Membership: Admins can add new Membership.
 
 **Features**
 - Inventory: Displays a list of items, their status (available/issued), and action buttons for admins to edit or delete.
 - Issue Process: Select an item, specify a due date, and confirm the issue.
 - Return Process: Select an issued item, check the fine status, and confirm the return.
+- Membership Process: Select all member, check the ID, Name, Plan.

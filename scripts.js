@@ -1,48 +1,47 @@
-// --- INITIAL DATA (State) ---
-let currentUser = null;
+// --- CONFIGURATION ---
+const PLAN_OPTIONS = ["6 Months", "1 Year", "2 Years", "Lifetime"];
 
+// --- STATE MANAGEMENT ---
+let currentUser = null;
 let books = [
     { category: "Book", title: "The Great Gatsby", author: "F. Scott Fitzgerald", serial: "B100", issued: false },
     { category: "Movie", title: "Interstellar", author: "Christopher Nolan", serial: "M500", issued: false },
     { category: "Book", title: "Atomic Habits", author: "James Clear", serial: "B101", issued: false },
     { category: "Book", title: "1984", author: "George Orwell", serial: "B102", issued: false }
 ];
-
 let issuedBooks = [];
+let memberships = [
+    { id: "LIB-1001", name: "Johnny Joestat", plan: "1 Year" },
+    { id: "LIB-1002", name: "Zhu Yuan", plan: "2 Year" },
+    { id: "LIB-1003", name: "Dan Heng", plan: "Lifetime" },
+];
 let pendingReturnData = null;
 
-// --- AUTHENTICATION LOGIC ---
+// --- AUTHENTICATION ---
 function handleLogin() {
     const user = document.getElementById('login-user').value;
     const pass = document.getElementById('login-pass').value;
-
+    
     if (user === 'admin' && pass === 'admin123') {
         currentUser = { name: 'Administrator', role: 'admin' };
     } else if (user === 'user' && pass === 'user123') {
         currentUser = { name: 'Standard User', role: 'user' };
     } else {
-        alert("Invalid Username or Password!");
-        return;
+        return alert("Invalid Credentials");
     }
 
     document.getElementById('login-page').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
     document.getElementById('user-badge').innerText = currentUser.role === 'admin' ? 'A' : 'U';
     document.getElementById('user-name').innerText = currentUser.name;
-
+    
     setupNavigation();
     showSection('search');
 }
 
-function logout() {
-    currentUser = null;
-    document.getElementById('login-page').classList.remove('hidden');
-    document.getElementById('main-app').classList.add('hidden');
-    document.getElementById('login-user').value = "";
-    document.getElementById('login-pass').value = "";
-}
+function logout() { location.reload(); }
 
-// --- NAVIGATION LOGIC ---
+// --- NAVIGATION ---
 function setupNavigation() {
     const nav = document.getElementById('nav-menu');
     let menuItems = [
@@ -50,11 +49,12 @@ function setupNavigation() {
         { id: 'issue', label: 'Issue Item', icon: '📤' },
         { id: 'return', label: 'Return Item', icon: '📥' }
     ];
-
+    
     if (currentUser.role === 'admin') {
-        menuItems.push({ id: 'add-book', label: 'Add New Item', icon: '➕' });
+        menuItems.push({ id: 'membership', label: 'Memberships', icon: '👥' });
+        menuItems.push({ id: 'add-book', label: 'Add Item', icon: '➕' });
     }
-
+    
     nav.innerHTML = menuItems.map(item => `
         <a href="#" onclick="showSection('${item.id}')" id="nav-${item.id}">
             <span>${item.icon}</span> ${item.label}
@@ -65,26 +65,79 @@ function setupNavigation() {
 function showSection(id) {
     document.querySelectorAll('.section-content').forEach(s => s.classList.add('hidden'));
     document.querySelectorAll('#nav-menu a').forEach(a => a.classList.remove('active-link'));
+    
+    document.getElementById(`section-${id}`).classList.remove('hidden');
+    document.getElementById(`nav-${id}`).classList.add('active-link');
+    
+    document.getElementById('page-title').innerText = id.charAt(0).toUpperCase() + id.slice(1).replace('-', ' ');
 
-    const section = document.getElementById(`section-${id}`);
-    if (section) section.classList.remove('hidden');
-
-    const navLink = document.getElementById(`nav-${id}`);
-    if (navLink) navLink.classList.add('active-link');
-
-    const titles = {
-        'search': 'Library Inventory',
-        'issue': 'Issue a Book/Media',
-        'return': 'Return Process',
-        'add-book': 'Inventory Management'
-    };
-    document.getElementById('page-title').innerText = titles[id] || 'Dashboard';
-
-    // Refresh data
     if (id === 'search') renderBookTable();
     if (id === 'issue') populateIssueSelect();
     if (id === 'return') populateReturnSelect();
-    if (id === 'add-book' && document.getElementById('edit-index').value === "-1") resetBookForm();
+    if (id === 'membership') {
+        initMembershipForm();
+        renderMembershipTable();
+    }
+}
+
+// --- MEMBERSHIP LOGIC ---
+function generateMemberID() {
+    // Generate ID based on current length + 1001 to ensure uniqueness
+    const nextNum = memberships.length > 0 
+        ? parseInt(memberships[memberships.length - 1].id.split('-')[1]) + 1 
+        : 1001;
+    return `LIB-${nextNum}`;
+}
+
+function initMembershipForm() {
+    // Set the auto-generated ID
+    document.getElementById('mem-id').value = generateMemberID();
+    
+    // Populate Plan dropdown from the list function/constant
+    const planSelect = document.getElementById('mem-plan');
+    planSelect.innerHTML = PLAN_OPTIONS.map(plan => `<option value="${plan}">${plan}</option>`).join('');
+}
+
+function renderMembershipTable() {
+    const tbody = document.getElementById('member-table-body');
+    if (memberships.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" class="px-6 py-8 text-center text-slate-400">No active memberships.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = memberships.map((m, index) => `
+        <tr class="text-sm">
+            <td class="px-6 py-4 font-mono text-blue-600 font-bold">${m.id}</td>
+            <td class="px-6 py-4 font-bold text-slate-900">${m.name}</td>
+            <td class="px-6 py-4"><span class="bg-blue-50 text-blue-700 px-2 py-1 rounded text-xs font-bold">${m.plan}</span></td>
+            <td class="px-6 py-4 text-right space-x-2">
+                <button onclick="cancelMembership(${index})" class="text-red-600 hover:underline text-xs font-bold">Remove</button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+function handleSaveMembership() {
+    const id = document.getElementById('mem-id').value;
+    const name = document.getElementById('mem-name').value;
+    const plan = document.getElementById('mem-plan').value;
+    
+    if (!name) return alert("Member name is mandatory");
+    
+    memberships.push({ id, name, plan });
+    
+    // Reset fields
+    document.getElementById('mem-name').value = "";
+    initMembershipForm(); // Generate next ID
+    renderMembershipTable();
+    alert(`Membership created for ${name} with ID: ${id}`);
+}
+
+function cancelMembership(index) {
+    if (confirm(`Remove member ${memberships[index].id}?`)) {
+        memberships.splice(index, 1);
+        renderMembershipTable();
+        initMembershipForm(); // Update ID field in case it was empty
+    }
 }
 
 // --- INVENTORY LOGIC ---
@@ -192,95 +245,59 @@ function handleSaveBook() {
     showSection('search');
 }
 
-// --- ISSUE LOGIC ---
+// --- ISSUE & RETURN LOGIC ---
 function populateIssueSelect() {
     const select = document.getElementById('issue-book-select');
-    const available = books.filter(b => !b.issued);
-
-    if (available.length === 0) {
-        select.innerHTML = `<option value="">No items available</option>`;
-    } else {
-        select.innerHTML = available.map(b => `<option value="${b.serial}">${b.title} (${b.serial})</option>`).join('');
-    }
-
-    const dateInput = document.getElementById('issue-date');
-    const future = new Date();
-    future.setDate(future.getDate() + 14);
-    dateInput.value = future.toISOString().split('T')[0];
+    const avail = books.filter(b => !b.issued);
+    select.innerHTML = avail.map(b => `<option value="${b.serial}">${b.title}</option>`).join('');
+    document.getElementById('issue-date').value = new Date(Date.now() + 12096e5).toISOString().split('T')[0];
 }
 
 function handleIssue() {
     const serial = document.getElementById('issue-book-select').value;
-    const dueDate = document.getElementById('issue-date').value;
-
-    if (!serial || !dueDate) return alert("Please select an item and date.");
-
+    if (!serial) return alert("No books available");
+    
     const book = books.find(b => b.serial === serial);
     book.issued = true;
-
-    issuedBooks.push({
-        serial: book.serial,
-        title: book.title,
-        dueDate: new Date(dueDate)
+    issuedBooks.push({ 
+        serial: book.serial, 
+        title: book.title, 
+        dueDate: new Date(document.getElementById('issue-date').value) 
     });
-
-    alert(`Success: "${book.title}" issued.`);
+    alert("Book Issued!");
     showSection('search');
 }
 
-// --- RETURN LOGIC ---
 function populateReturnSelect() {
     const select = document.getElementById('return-book-select');
-    if (issuedBooks.length === 0) {
-        select.innerHTML = `<option value="">No items currently issued</option>`;
-    } else {
-        select.innerHTML = issuedBooks.map(b => `<option value="${b.serial}">${b.title} (${b.serial})</option>`).join('');
-    }
+    select.innerHTML = issuedBooks.map(b => `<option value="${b.serial}">${b.title}</option>`).join('');
     document.getElementById('actual-return-date').value = new Date().toISOString().split('T')[0];
     document.getElementById('fine-panel').classList.add('hidden');
 }
 
 function calculateReturn() {
     const serial = document.getElementById('return-book-select').value;
-    if (!serial) return alert("No item selected");
-
-    const issuedItem = issuedBooks.find(b => b.serial === serial);
+    if (!serial) return alert("No items to return");
+    
+    const item = issuedBooks.find(b => b.serial === serial);
     const returnDate = new Date(document.getElementById('actual-return-date').value);
-
-    const diffTime = returnDate - issuedItem.dueDate;
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const fine = diffDays > 0 ? diffDays * 2 : 0;
-
+    const delay = Math.ceil((returnDate - item.dueDate) / (1000 * 60 * 60 * 24));
+    
+    const fine = delay > 0 ? delay * 5 : 0;
     pendingReturnData = { serial, fine };
-
-    const panel = document.getElementById('fine-panel');
-    const amountText = document.getElementById('fine-amount');
     
-    panel.classList.remove('hidden');
-    amountText.innerText = fine > 0 ? `Total Fine: $${fine}.00` : "Status: On Time (No Fine)";
-    
-    // Auto-check the box if there is no fine
-    document.getElementById('fine-paid').checked = (fine === 0);
+    document.getElementById('fine-panel').classList.remove('hidden');
+    document.getElementById('fine-amount').innerText = `Fine: $${fine}.00`;
+    document.getElementById('fine-paid').checked = fine === 0;
 }
 
 function processReturn() {
-    if (!pendingReturnData) return;
-
-    const isPaid = document.getElementById('fine-paid').checked;
-
-    if (pendingReturnData.fine > 0 && !isPaid) {
-        return alert("Error: Outstanding fines must be cleared.");
+    if (pendingReturnData.fine > 0 && !document.getElementById('fine-paid').checked) {
+        return alert("Please confirm fine payment first");
     }
-
-    // 1. Update the master books array
     const book = books.find(b => b.serial === pendingReturnData.serial);
-    if (book) book.issued = false;
-
-    // 2. Remove from issued list
+    book.issued = false;
     issuedBooks = issuedBooks.filter(b => b.serial !== pendingReturnData.serial);
-    
-    // 3. Reset state and UI
-    pendingReturnData = null;
-    alert("Return processed successfully.");
+    alert("Book Returned!");
     showSection('search');
 }
