@@ -40,3 +40,10 @@ LibManager is a simple and user-friendly library management system that allows u
 - Issue Process: Select an item, specify a due date, and confirm the issue.
 - Return Process: Select an issued item, check the fine status, and confirm the return.
 - Membership Process: Select all member, check the ID, Name, Plan.
+
+## DataBase
+- supabase
+    if want to use your own database:
+        1. login your supabase account. https://supabase.com/
+        2. create your table, then insert your data
+        3. change the SUPABASE_URL and SUPABASE_ANON_KEY on 'scripts.js'.
