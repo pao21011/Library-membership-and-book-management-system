@@ -43,7 +43,8 @@ LibManager is a simple and user-friendly library management system that allows u
 
 ## DataBase
 - supabase
-    if want to use your own database:
-        1. login your supabase account. https://supabase.com/
-        2. create your table, then insert your data
-        3. change the SUPABASE_URL and SUPABASE_ANON_KEY on 'scripts.js'.
+
+if want to use your own database:
+1. login your supabase account. https://supabase.com/
+2. create your table, then insert your data
+3. change the SUPABASE_URL and SUPABASE_ANON_KEY on 'scripts.js'.
