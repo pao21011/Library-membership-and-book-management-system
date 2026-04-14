@@ -9,21 +9,66 @@ const PLAN_OPTIONS = ["6 Months", "1 Year", "2 Years", "Lifetime"];
 let currentUser = null;
 let pendingReturnData = null;
 
-// --- AUTHENTICATION ---
-function handleLogin() {
-    const user = document.getElementById('login-user').value;
-    const pass = document.getElementById('login-pass').value;
-    
-    if (user === 'admin' && pass === 'admin123') {
-        currentUser = { name: 'Administrator', role: 'admin' };
-    } else if (user === 'user' && pass === 'user123') {
-        currentUser = { name: 'Standard User', role: 'user' };
-    } else {
-        return alert("Invalid Credentials");
+// --- AUTHENTICATION TOGGLE ---
+function toggleAuth(showRegister) {
+    document.getElementById('login-container').classList.toggle('hidden', showRegister);
+    document.getElementById('register-container').classList.toggle('hidden', !showRegister);
+}
+
+// --- REGISTRATION LOGIC ---
+async function handleRegister() {
+    const username = document.getElementById('reg-user').value;
+    const email = document.getElementById('reg-email').value;
+    const phone = document.getElementById('reg-phone').value;
+    const password = document.getElementById('reg-pass').value;
+
+    if (!username || !email || !password) return alert("Please fill required fields");
+
+    const { error } = await _supabase.from('users').insert([
+        { username, email, phone, password, role: 'user' }
+    ]);
+
+    if (error) {
+        return alert("Registration failed: " + error.message);
     }
 
+    alert("Registration successful! You can now log in.");
+    toggleAuth(false);
+}
+
+// --- UPDATED LOGIN LOGIC ---
+async function handleLogin() {
+    const userVal = document.getElementById('login-user').value;
+    const passVal = document.getElementById('login-pass').value;
+    
+    // 1. Check Hardcoded Admin
+    if (userVal === 'admin' && passVal === 'admin123') {
+        currentUser = { name: 'Administrator', role: 'admin' };
+    } 
+    // 2. Check Hardcoded Standard User
+    else if (userVal === 'user' && passVal === 'user123') {
+        currentUser = { name: 'Standard User', role: 'user' };
+    } 
+    // 3. Check Supabase Users Table (for newly registered users)
+    else {
+        const { data: user, error } = await _supabase
+            .from('users')
+            .select('*')
+            .eq('username', userVal)
+            .eq('password', passVal)
+            .single();
+
+        if (error || !user) {
+            return alert("Invalid username or password");
+        }
+        currentUser = { name: user.username, role: user.role };
+    }
+
+    // Success: Transition to App
     document.getElementById('login-page').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
+    
+    // UI Personalization
     document.getElementById('user-badge').innerText = currentUser.role === 'admin' ? 'A' : 'U';
     document.getElementById('user-name').innerText = currentUser.name;
     
